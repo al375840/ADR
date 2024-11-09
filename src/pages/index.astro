@@ -1,79 +1,282 @@
 ---
+import '../../public/styles/global.css'; // Adjust the path if necessary
 ---
+
 <html lang="es">
   <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Grid con Estilos Aplicados Correctamente</title>
-    <!-- Importar la fuente 'Press Start 2P' desde Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <!-- Importar el archivo CSS global -->
-    <link rel="stylesheet" href="/styles/global.css">
+    <!-- Import the 'Press Start 2P' font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="container"></div>
 
     <script>
-      // @ts-nocheck
-      function generateSquares() {
+      document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('container');
-        if (!container) {
-          throw new Error("El elemento 'container' no se encontró en el DOM.");
-        }
+        let numCols, numRows;
+        let occupiedPositions = [];
+        let textSquares = [];
+        let totalContentHeight = 0;
 
-        container.innerHTML = ''; // Limpia los cuadrados existentes
-
-        const minSize = 60; // Tamaño mínimo de los cuadrados
-
-        const availableWidth = window.innerWidth;
-        const availableHeight = window.innerHeight;
-
-        // Calcula el número de columnas y filas basándose en el tamaño mínimo
-        const numCols = Math.floor(availableWidth / minSize);
-        const numRows = Math.floor(availableHeight / minSize);
-
-        // Ajusta el grid para que tenga el número correcto de columnas
-        container.style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
-        container.style.gridAutoRows = `minmax(${minSize}px, 1fr)`;
-
-        // Definir las posiciones y letras para los cuadrados con texto
-        const textSquares = [
-          { row: 3, col: 4, letter: 'A' },
-          { row: 3, col: 5, letter: 'D' },
-          { row: 3, col: 6, letter: 'R' },
-          { row: 3, col: 7, letter: 'I' },
-          { row: 3, col: 8, letter: 'A' },
-          { row: 3, col: 9, letter: 'N' },
-          { row: 5, col: 4, letter: 'I' },
-          { row: 5, col: 5, letter: 'T' },
-          { row: 5, col: 7, letter: 'E' },
-          { row: 5, col: 8, letter: 'N' },
-          { row: 5, col: 9, letter: 'G' },
-          { row: 5, col: 10, letter: 'I' },
-          { row: 5, col: 11, letter: 'N' },
-          { row: 5, col: 12, letter: 'E' },
-          { row: 5, col: 13, letter: 'E' },
-          { row: 5, col: 14, letter: 'R' },
+        const texts = [
+          {
+            content: "ADRIAN",
+          },
+          {
+            content: "IT ENGINEER",
+          },
         ];
 
-        const totalPositions = [];
+        const cards = [
+          {
+            content: 'Este es el texto de la primera tarjeta.',
+            width: 10,
+            height: 4,
+          },
+        ];
 
-        // Genera un array con todas las posiciones de los cuadrados que no tienen texto
-        for (let row = 1; row <= numRows; row++) {
-          for (let col = 1; col <= numCols; col++) {
-            // Excluye los cuadrados con texto
-            const isTextSquare = textSquares.some(
-              (item) => item.row === row && item.col === col
-            );
-            if (!isTextSquare) {
-              totalPositions.push({ row, col });
+        const images = [
+          {
+            src: '/images/portrait.png', // Ensure the path is correct
+            alt: 'Descripción de la imagen',
+            width: 5,
+            height: 8,
+          },
+        ];
+
+        function generateSquares() {
+          if (!container) {
+            throw new Error("El elemento 'container' no se encontró en el DOM.");
+          }
+
+          container.innerHTML = ''; // Clear existing squares
+
+          const minSize = 60; // Minimum size of squares
+
+          const availableWidth = window.innerWidth;
+          const availableHeight = window.innerHeight;
+
+          // Calculate the number of columns and rows based on the minimum size
+          numCols = Math.floor(availableWidth / minSize);
+          numRows = Math.floor(availableHeight / minSize);
+
+          // Set up the grid to have the correct number of columns
+          container.style.display = 'grid';
+          container.style.width = '100vw';
+          container.style.height = '100vh';
+          container.style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
+          container.style.gridAutoRows = `minmax(${minSize}px, 1fr)`;
+
+          occupiedPositions = [];
+          textSquares = [];
+
+          calculateTotalContentHeight();
+          createTextElements();
+          createCardElements();
+          createImageElements();
+          generateGridSquares();
+        }
+
+        function calculateTotalContentHeight() {
+          totalContentHeight = 0;
+
+          // Texts occupy one row each
+          totalContentHeight += texts.length;
+
+          // Add the heights of cards and images
+          cards.forEach((card) => {
+            totalContentHeight += card.height;
+          });
+
+          images.forEach((image) => {
+            totalContentHeight += image.height;
+          });
+
+          // Add spaces between elements
+          const spacesBetweenElements = texts.length + cards.length + images.length - 1;
+          totalContentHeight += spacesBetweenElements;
+        }
+
+        function createTextElements() {
+          let currentRow = Math.floor((numRows - totalContentHeight) / 2) + 1;
+          currentRow = Math.max(currentRow, 1);
+
+          texts.forEach((textItem) => {
+            const { content } = textItem;
+
+            // Calculate starting column to center the text
+            const textLength = content.replace(/\s/g, '').length;
+            let startCol = Math.floor((numCols - textLength) / 2) + 1;
+            startCol = Math.max(startCol, 1);
+
+            textItem.row = currentRow;
+            textItem.col = startCol;
+
+            let currentCol = startCol;
+
+            for (let i = 0; i < content.length; i++) {
+              const char = content[i];
+              if (char !== ' ') {
+                occupiedPositions.push({ row: currentRow, col: currentCol });
+                textSquares.push({ row: currentRow, col: currentCol, letter: char });
+                currentCol++;
+              } else {
+                currentCol++;
+              }
+            }
+
+            currentRow += 1; // Move to the next row for the next text
+          });
+        }
+
+        function createCardElements() {
+          let currentRow = texts[texts.length - 1].row + 1; // One row after the last text
+
+          cards.forEach((cardItem) => {
+            const { width, height } = cardItem;
+
+            // Center the card horizontally
+            let startCol = Math.floor((numCols - width) / 2) + 1;
+            startCol = Math.max(startCol, 1);
+
+            cardItem.row = currentRow;
+            cardItem.col = startCol;
+
+            const endRow = currentRow + height - 1;
+            const endCol = startCol + width - 1;
+
+            // Mark positions as occupied
+            for (let r = currentRow; r <= endRow; r++) {
+              for (let c = startCol; c <= endCol; c++) {
+                occupiedPositions.push({ row: r, col: c });
+              }
+            }
+
+            createCard(cardItem);
+
+            currentRow = endRow + 1; // Move to the next row after the card
+          });
+        }
+
+        function createImageElements() {
+          let currentRow = cards.length
+            ? cards[cards.length - 1].row + cards[cards.length - 1].height + 1
+            : texts[texts.length - 1].row + 1;
+
+          images.forEach((imageItem) => {
+            const { width, height } = imageItem;
+
+            // Center the image horizontally
+            let startCol = Math.floor((numCols - width) / 2) + 1;
+            startCol = Math.max(startCol, 1);
+
+            imageItem.row = currentRow;
+            imageItem.col = startCol;
+
+            const endRow = currentRow + height - 1;
+            const endCol = startCol + width - 1;
+
+            // Mark positions as occupied
+            for (let r = currentRow; r <= endRow; r++) {
+              for (let c = startCol; c <= endCol; c++) {
+                occupiedPositions.push({ row: r, col: c });
+              }
+            }
+
+            createImage(imageItem);
+
+            currentRow = endRow + 1; // Move to the next row after the image
+          });
+        }
+
+        function createCard(cardData) {
+          const { content, row, col, width, height } = cardData;
+
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          card.style.gridRow = `${row} / ${row + height}`;
+          card.style.gridColumn = `${col} / ${col + width}`;
+
+          card.innerHTML = `<p>${content}</p>`;
+
+          container.appendChild(card);
+        }
+
+        function createImage(imageData) {
+          const { src, alt, row, col, width, height } = imageData;
+
+          const imgWrapper = document.createElement('div');
+          imgWrapper.className = 'image-wrapper';
+
+          imgWrapper.style.gridRow = `${row} / ${row + height}`;
+          imgWrapper.style.gridColumn = `${col} / ${col + width}`;
+
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = alt;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+
+          imgWrapper.appendChild(img);
+          container.appendChild(imgWrapper);
+        }
+
+        function generateGridSquares() {
+          const totalPositions = [];
+          for (let row = 1; row <= numRows; row++) {
+            for (let col = 1; col <= numCols; col++) {
+              const isOccupied = occupiedPositions.some(
+                (item) => item.row === row && item.col === col
+              );
+              if (!isOccupied) {
+                totalPositions.push({ row, col });
+              }
+            }
+          }
+
+          shuffle(totalPositions);
+
+          const numLighterSquares = Math.floor(totalPositions.length * 0.3);
+          const lighterPositions = totalPositions.slice(0, numLighterSquares);
+
+          for (let row = 1; row <= numRows; row++) {
+            for (let col = 1; col <= numCols; col++) {
+              const square = document.createElement('div');
+              square.className = 'square';
+
+              square.classList.add(`row-${row}`, `col-${col}`);
+
+              const textSquare = textSquares.find(
+                (item) => item.row === row && item.col === col
+              );
+
+              if (textSquare) {
+                square.textContent = textSquare.letter;
+                square.classList.add('text-square');
+              } else {
+                const isLighter = lighterPositions.some(
+                  (pos) => pos.row === row && pos.col === col
+                );
+
+                if (isLighter) {
+                  square.classList.add('lighter');
+                }
+              }
+
+              container.appendChild(square);
             }
           }
         }
 
-        // Mezcla el array de posiciones de forma aleatoria
-        // @ts-nocheck
         function shuffle(array) {
           for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -81,97 +284,9 @@
           }
         }
 
-        shuffle(totalPositions);
-
-        // Calcula el número de cuadrados que serán más claros (30% de los cuadrados sin texto)
-        const numLighterSquares = Math.floor(totalPositions.length * 0.3);
-
-        // Asigna las clases 'lighter' a los cuadrados correspondientes
-        const lighterPositions = totalPositions.slice(0, numLighterSquares);
-
-        // Genera los cuadrados en orden, asignando las clases correspondientes
-        for (let row = 1; row <= numRows; row++) {
-          for (let col = 1; col <= numCols; col++) {
-            const square = document.createElement('div');
-            square.className = 'square';
-
-            // Añade clases para identificar la fila y columna
-            square.classList.add(`row-${row}`, `col-${col}`);
-
-            // Verifica si el cuadrado actual es uno de los que tiene texto
-            const textSquare = textSquares.find(
-              (item) => item.row === row && item.col === col
-            );
-
-            if (textSquare) {
-              square.textContent = textSquare.letter;
-              square.classList.add('text-square');
-            } else {
-              // Asigna la clase 'lighter' si corresponde
-              const isLighter = lighterPositions.some(
-                (pos) => pos.row === row && pos.col === col
-              );
-
-              if (isLighter) {
-                square.classList.add('lighter');
-              }
-            }
-
-            container.appendChild(square);
-          }
-        }
-
-        // Crear tarjetas de forma automatizada
-        const cards = [
-          {
-            text: 'Este es el texto de la primera tarjeta.',
-            startRow: 7,
-            startCol: 4,
-            endRow: 10,
-            endCol: 13,
-          },
-          // Puedes añadir más tarjetas aquí
-        ];
-
-        // Función para crear una tarjeta
-        // @ts-nocheck
-        function createCard(cardData) {
-          const {
-            text,
-            startRow,
-            startCol,
-            endRow,
-            endCol,
-            ...attrs
-          } = cardData;
-
-          const card = document.createElement('div');
-          card.className = 'card';
-
-          // Configurar las posiciones en la cuadrícula
-          card.style.gridRow = `${startRow} / ${endRow + 1}`;
-          card.style.gridColumn = `${startCol} / ${endCol + 1}`;
-
-          // Añadir atributos adicionales si se proporcionan
-          for (const [key, value] of Object.entries(attrs)) {
-            card.setAttribute(key, String(value));
-          }
-
-          // Añadir el texto
-          card.innerHTML = `<p>${text}</p>`;
-
-          container.appendChild(card);
-        }
-
-        // Crear las tarjetas definidas en el array 'cards'
-        for (const cardData of cards) {
-          createCard(cardData);
-        }
-      }
-
-      // Genera los cuadrados al cargar la página y al cambiar el tamaño de la ventana
-      window.addEventListener('load', generateSquares);
-      window.addEventListener('resize', generateSquares);
+        window.addEventListener('resize', generateSquares);
+        generateSquares();
+      });
     </script>
   </body>
 </html>
