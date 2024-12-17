@@ -20,100 +20,98 @@ import '../../public/styles/global.css'; // Ajusta la ruta si es necesario
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('container');
-        let numCols: number, numRows: number;
-        let occupiedPositions: { row: any; col: any; }[] = [];
-        let textSquares: { row: number; col: number; letter: string; }[] = [];
+        let numCols, numRows;
+        let occupiedPositions = [];
+        let currentPage = 0;
 
-        const images = [
-          {
-            src: '/images/portrait.png',
-            alt: 'Descripción de la imagen',
-            width: 5,
-            height: 8,
-            col: 2,
-            row: 2,
-          },
-        ];
+        // Página 1: Elementos originales
+        const page1 = {
+          images: [{ src: '/images/portrait.png', alt: 'Descripción de la imagen', width: 5, height: 8, col: 2, row: 2 }],
+          texts: [
+            { content: 'ADRIAN', col: 2, row: 2 },
+            { content: 'IT ENGINEER', col: 2, row: 4 },
+          ],
+          cards: [{ content: 'Este es el texto de la primera tarjeta.', width: 10, height: 4, col: 2, row: 11 }],
+        };
 
-        const texts = [
-          {
-            content: "ADRIAN",
-            col: 2,
-            row: 2,
-          },
-          {
-            content: "IT ENGINEER",
-            col: 2,
-            row: 4,
-          },
-        ];
+        // Página 2: Personalizable
+        const page2 = {
+          images: [{ src: '/images/portrait.png', alt: 'Descripción de la imagen', width: 5, height: 8, col: 4, row: 4 }],
+          texts: [
+            { content: 'ADRIAN', col: 4, row: 6 },
+            { content: 'ENGINEER', col: 6, row: 8 },
+          ],
+          cards: [{ content: 'Otra tarjeta diferente.', width: 8, height: 4, col: 4, row: 12 }],
+        };
 
-        const cards = [
-          {
-            content: 'Este es el texto de la primera tarjeta.',
-            width: 10,
-            height: 4,
-            col: 2,
-            row: 11,
-          },
-        ];
+        function initGrid() {
+          container.innerHTML = '';
+          numCols = Math.floor(window.innerWidth / 60);
+          numRows = Math.floor(window.innerHeight / 60);
 
-        function generateSquares() {
-          if (!container) {
-            throw new Error("El elemento 'container' no se encontró en el DOM.");
-          }
-
-          container.innerHTML = ''; // Limpia los cuadrados existentes
-
-          const minSize = 60; // Tamaño mínimo de los cuadrados
-
-          const availableWidth = window.innerWidth;
-          const availableHeight = window.innerHeight;
-
-          // Calcula el número de columnas y filas basándose en el tamaño mínimo
-          numCols = Math.floor(availableWidth / minSize);
-          numRows = Math.floor(availableHeight / minSize);
-
-          // Ajusta el grid para que tenga el número correcto de columnas
           container.style.display = 'grid';
-          container.style.width = '100vw';
-          container.style.height = '100vh';
           container.style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
-          container.style.gridAutoRows = `minmax(${minSize}px, 1fr)`;
-          container.style.position = 'relative';
-
+          container.style.gridAutoRows = `60px`;
           occupiedPositions = [];
-          textSquares = [];
 
           generateGridSquares();
-          createCardElements();
-          createImageElements();
-          createTextElements();
+          const currentConfig = currentPage === 0 ? page1 : page2;
+          renderCards(currentConfig.cards);
+          renderImages(currentConfig.images);
+          renderTextSquares(currentConfig.texts);
         }
 
-        function markPositionAsOccupied(row: number, col: number) {
-          occupiedPositions = occupiedPositions.filter(
-            (pos) => pos.row !== row || pos.col !== col
-          );
-          occupiedPositions.push({ row, col });
+        function markOccupied(row, col) {
+          occupiedPositions.push(`${row}-${col}`);
         }
 
-        function createImageElements() {
-          images.forEach((imageItem) => {
-            const { src, alt, width, height, col, row } = imageItem;
-
-            for (let r = row; r < row + height; r++) {
-              for (let c = col; c < col + width; c++) {
-                markPositionAsOccupied(r, c);
-              }
+        function generateGridSquares() {
+          const totalSquares = [];
+          for (let row = 1; row <= numRows; row++) {
+            for (let col = 1; col <= numCols; col++) {
+              totalSquares.push(`${row}-${col}`);
             }
+          }
 
+          const lighterCount = Math.floor(totalSquares.length * 0.3);
+          const lighterSquares = new Set();
+
+          while (lighterSquares.size < lighterCount) {
+            const randomIndex = Math.floor(Math.random() * totalSquares.length);
+            lighterSquares.add(totalSquares[randomIndex]);
+          }
+
+          for (let row = 1; row <= numRows; row++) {
+            for (let col = 1; col <= numCols; col++) {
+              const square = document.createElement('div');
+              square.className = 'square';
+              const position = `${row}-${col}`;
+              if (lighterSquares.has(position)) {
+                square.classList.add('lighter');
+              }
+              container.appendChild(square);
+            }
+          }
+        }
+
+        function renderCards(cards) {
+          cards.forEach(({ content, width, height, col, row }) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.gridColumn = `${col} / span ${width}`;
+            card.style.gridRow = `${row} / span ${height}`;
+            card.innerHTML = `<p>${content}</p>`;
+            container.appendChild(card);
+            markOccupied(row, col);
+          });
+        }
+
+        function renderImages(images) {
+          images.forEach(({ src, alt, width, height, col, row }) => {
             const imgWrapper = document.createElement('div');
             imgWrapper.className = 'image-wrapper';
-            imgWrapper.style.gridRow = `${row} / span ${height}`;
             imgWrapper.style.gridColumn = `${col} / span ${width}`;
-            imgWrapper.style.position = 'absolute';
-            imgWrapper.style.zIndex = '2';
+            imgWrapper.style.gridRow = `${row} / span ${height}`;
 
             const img = document.createElement('img');
             img.src = src;
@@ -124,104 +122,34 @@ import '../../public/styles/global.css'; // Ajusta la ruta si es necesario
 
             imgWrapper.appendChild(img);
             container.appendChild(imgWrapper);
+            markOccupied(row, col);
           });
         }
 
-        function createTextElements() {
-          texts.forEach((textItem) => {
-            let { content, col, row } = textItem;
-
-            if (col == null) {
-              const textLength = content.replace(/\s/g, '').length;
-              col = Math.floor((numCols - textLength) / 2) + 1;
-              col = Math.max(col, 1);
-              textItem.col = col;
-            }
-
-            if (row == null) {
-              row = Math.floor(numRows / 2);
-              row = Math.max(row, 1);
-              textItem.row = row;
-            }
-
+        function renderTextSquares(texts) {
+          texts.forEach(({ content, col, row }) => {
             let currentCol = col;
-
-            for (let i = 0; i < content.length; i++) {
-              const char = content[i];
+            for (const char of content) {
               if (char !== ' ') {
-                markPositionAsOccupied(row, currentCol);
                 const square = document.createElement('div');
                 square.className = 'square text-square';
                 square.textContent = char;
-                square.style.gridRow = `${row}`;
-                square.style.gridColumn = `${currentCol}`;
-                square.style.zIndex = '3';
-                square.style.display = 'flex';
-                square.style.alignItems = 'center';
-                square.style.justifyContent = 'center';
-                square.style.fontSize = '0.8rem';
-                square.style.lineHeight = '1';
+                square.style.gridColumn = currentCol;
+                square.style.gridRow = row;
                 container.appendChild(square);
-                currentCol++;
-              } else {
-                currentCol++;
+                markOccupied(row, currentCol);
               }
+              currentCol++;
             }
           });
         }
 
-        function createCardElements() {
-          cards.forEach((cardItem) => {
-            const { content, width, height, col, row } = cardItem;
-
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.style.gridRow = `${row} / span ${height}`;
-            card.style.gridColumn = `${col} / span ${width}`;
-            card.style.position = 'absolute';
-            card.style.zIndex = '1';
-            card.innerHTML = `<p>${content}</p>`;
-
-            container.appendChild(card);
-          });
-        }
-
-        function generateGridSquares() {
-          const totalSquares = [];
-          for (let row = 1; row <= numRows; row++) {
-            for (let col = 1; col <= numCols; col++) {
-              totalSquares.push({ row, col });
-            }
-          }
-
-          const lighterCount = Math.floor(totalSquares.length * 0.3);
-          const lighterSquares = shuffle(totalSquares).slice(0, lighterCount);
-
-          for (let row = 1; row <= numRows; row++) {
-            for (let col = 1; col <= numCols; col++) {
-              const square = document.createElement('div');
-              square.className = 'square';
-              square.style.gridRow = `${row}`;
-              square.style.gridColumn = `${col}`;
-
-              if (lighterSquares.some(sq => sq.row === row && sq.col === col)) {
-                square.classList.add('lighter');
-              }
-              container.appendChild(square);
-            }
-          }
-        }
-
-        function shuffle(array) {
-          for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-          }
-          return array;
-        }
-
-        window.addEventListener('resize', generateSquares);
-        generateSquares();
+        window.addEventListener('resize', initGrid);
+        document.addEventListener('click', () => {
+          currentPage = (currentPage + 1) % 2;
+          initGrid();
+        });
+        initGrid();
       });
     </script>
   </body>
