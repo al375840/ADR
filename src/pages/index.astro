@@ -80,26 +80,51 @@ import '../../public/styles/global.css'; // Ajusta la ruta si es necesario
           container.style.height = '100vh';
           container.style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
           container.style.gridAutoRows = `minmax(${minSize}px, 1fr)`;
+          container.style.position = 'relative';
 
           occupiedPositions = [];
           textSquares = [];
 
+          generateGridSquares();
+          createCardElements();
           createImageElements();
           createTextElements();
-          createCardElements();
-          generateGridSquares();
-        }
-
-        function isPositionOccupied(row: number, col: number) {
-          return occupiedPositions.some(
-            (pos) => pos.row === row && pos.col === col
-          );
         }
 
         function markPositionAsOccupied(row: number, col: number) {
-          if (row > 0 && row <= numRows && col > 0 && col <= numCols) {
-            occupiedPositions.push({ row, col });
-          }
+          occupiedPositions = occupiedPositions.filter(
+            (pos) => pos.row !== row || pos.col !== col
+          );
+          occupiedPositions.push({ row, col });
+        }
+
+        function createImageElements() {
+          images.forEach((imageItem) => {
+            const { src, alt, width, height, col, row } = imageItem;
+
+            for (let r = row; r < row + height; r++) {
+              for (let c = col; c < col + width; c++) {
+                markPositionAsOccupied(r, c);
+              }
+            }
+
+            const imgWrapper = document.createElement('div');
+            imgWrapper.className = 'image-wrapper';
+            imgWrapper.style.gridRow = `${row} / span ${height}`;
+            imgWrapper.style.gridColumn = `${col} / span ${width}`;
+            imgWrapper.style.position = 'absolute';
+            imgWrapper.style.zIndex = '2';
+
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = alt;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+
+            imgWrapper.appendChild(img);
+            container.appendChild(imgWrapper);
+          });
         }
 
         function createTextElements() {
@@ -124,14 +149,19 @@ import '../../public/styles/global.css'; // Ajusta la ruta si es necesario
             for (let i = 0; i < content.length; i++) {
               const char = content[i];
               if (char !== ' ') {
-                if (!isPositionOccupied(row, currentCol)) {
-                  markPositionAsOccupied(row, currentCol);
-                  textSquares.push({ row, col: currentCol, letter: char });
-                } else {
-                  console.warn(
-                    `La posición (${row}, ${currentCol}) ya está ocupada.`
-                  );
-                }
+                markPositionAsOccupied(row, currentCol);
+                const square = document.createElement('div');
+                square.className = 'square text-square';
+                square.textContent = char;
+                square.style.gridRow = `${row}`;
+                square.style.gridColumn = `${currentCol}`;
+                square.style.zIndex = '3';
+                square.style.display = 'flex';
+                square.style.alignItems = 'center';
+                square.style.justifyContent = 'center';
+                square.style.fontSize = '0.8rem';
+                square.style.lineHeight = '1';
+                container.appendChild(square);
                 currentCol++;
               } else {
                 currentCol++;
@@ -142,188 +172,52 @@ import '../../public/styles/global.css'; // Ajusta la ruta si es necesario
 
         function createCardElements() {
           cards.forEach((cardItem) => {
-            let { content, width, height, col, row } = cardItem;
+            const { content, width, height, col, row } = cardItem;
 
-            if (col == null) {
-              col = Math.floor((numCols - width) / 2) + 1;
-              col = Math.max(col, 1);
-              cardItem.col = col;
-            }
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.gridRow = `${row} / span ${height}`;
+            card.style.gridColumn = `${col} / span ${width}`;
+            card.style.position = 'absolute';
+            card.style.zIndex = '1';
+            card.innerHTML = `<p>${content}</p>`;
 
-            if (row == null) {
-              const maxTextRow = texts.reduce(
-                (max, textItem) => Math.max(max, textItem.row),
-                0
-              );
-              row = maxTextRow + 2; // Dejar una fila de espacio
-              row = Math.max(row, 1);
-              cardItem.row = row;
-            }
-
-            const endRow = row + height - 1;
-            const endCol = col + width - 1;
-
-            // Verificar si las posiciones están ocupadas
-            let canPlace = true;
-            for (let r = row; r <= endRow; r++) {
-              for (let c = col; c <= endCol; c++) {
-                if (isPositionOccupied(r, c)) {
-                  console.warn(
-                    `La posición (${r}, ${c}) ya está ocupada. La tarjeta no puede ser colocada.`
-                  );
-                  canPlace = false;
-                  break;
-                }
-              }
-              if (!canPlace) break;
-            }
-
-            if (canPlace) {
-              // Marcar posiciones como ocupadas
-              for (let r = row; r <= endRow; r++) {
-                for (let c = col; c <= endCol; c++) {
-                  markPositionAsOccupied(r, c);
-                }
-              }
-              createCard(cardItem);
-            }
+            container.appendChild(card);
           });
-        }
-
-        function createImageElements() {
-          images.forEach((imageItem) => {
-            let { src, alt, width, height, col, row } = imageItem;
-
-            if (col == null) {
-              col = Math.floor((numCols - width) / 2) + 1;
-              col = Math.max(col, 1);
-              imageItem.col = col;
-            }
-
-            if (row == null) {
-              const maxCardRow = cards.reduce(
-                (max, cardItem) => Math.max(max, cardItem.row + cardItem.height - 1),
-                0
-              );
-              row = maxCardRow + 2; // Dejar una fila de espacio
-              row = Math.max(row, 1);
-              imageItem.row = row;
-            }
-
-            const endRow = row + height - 1;
-            const endCol = col + width - 1;
-
-            // Verificar si las posiciones están ocupadas
-            let canPlace = true;
-            for (let r = row; r <= endRow; r++) {
-              for (let c = col; c <= endCol; c++) {
-                if (isPositionOccupied(r, c)) {
-                  console.warn(
-                    `La posición (${r}, ${c}) ya está ocupada. La imagen no puede ser colocada.`
-                  );
-                  canPlace = false;
-                  break;
-                }
-              }
-              if (!canPlace) break;
-            }
-
-            if (canPlace) {
-              // Marcar posiciones como ocupadas
-              for (let r = row; r <= endRow; r++) {
-                for (let c = col; c <= endCol; c++) {
-                  markPositionAsOccupied(r, c);
-                }
-              }
-              createImage(imageItem);
-            }
-          });
-        }
-
-        function createCard(cardData: { content: any; width: any; height: any; col: any; row: any; }) {
-          const { content, row, col, width, height } = cardData;
-
-          const card = document.createElement('div');
-          card.className = 'card';
-
-          card.style.gridRow = `${row} / ${row + height}`;
-          card.style.gridColumn = `${col} / ${col + width}`;
-
-          card.innerHTML = `<p>${content}</p>`;
-
-          container.appendChild(card);
-        }
-
-        function createImage(imageData: { src: any; alt: any; width: any; height: any; col: any; row: any; }) {
-          const { src, alt, row, col, width, height } = imageData;
-
-          const imgWrapper = document.createElement('div');
-          imgWrapper.className = 'image-wrapper';
-
-          imgWrapper.style.gridRow = `${row} / ${row + height}`;
-          imgWrapper.style.gridColumn = `${col} / ${col + width}`;
-
-          const img = document.createElement('img');
-          img.src = src;
-          img.alt = alt;
-          img.style.width = '100%';
-          img.style.height = '100%';
-          img.style.objectFit = 'cover';
-
-          imgWrapper.appendChild(img);
-          container.appendChild(imgWrapper);
         }
 
         function generateGridSquares() {
-          const totalPositions = [];
+          const totalSquares = [];
           for (let row = 1; row <= numRows; row++) {
             for (let col = 1; col <= numCols; col++) {
-              const isOccupied = isPositionOccupied(row, col);
-              if (!isOccupied) {
-                totalPositions.push({ row, col });
-              }
+              totalSquares.push({ row, col });
             }
           }
 
-          shuffle(totalPositions);
-
-          const numLighterSquares = Math.floor(totalPositions.length * 0.3);
-          const lighterPositions = totalPositions.slice(0, numLighterSquares);
+          const lighterCount = Math.floor(totalSquares.length * 0.3);
+          const lighterSquares = shuffle(totalSquares).slice(0, lighterCount);
 
           for (let row = 1; row <= numRows; row++) {
             for (let col = 1; col <= numCols; col++) {
               const square = document.createElement('div');
               square.className = 'square';
+              square.style.gridRow = `${row}`;
+              square.style.gridColumn = `${col}`;
 
-              square.classList.add(`row-${row}`, `col-${col}`);
-
-              const textSquare = textSquares.find(
-                (item) => item.row === row && item.col === col
-              );
-
-              if (textSquare) {
-                square.textContent = textSquare.letter;
-                square.classList.add('text-square');
-              } else {
-                const isLighter = lighterPositions.some(
-                  (pos) => pos.row === row && pos.col === col
-                );
-
-                if (isLighter) {
-                  square.classList.add('lighter');
-                }
+              if (lighterSquares.some(sq => sq.row === row && sq.col === col)) {
+                square.classList.add('lighter');
               }
-
               container.appendChild(square);
             }
           }
         }
 
-        function shuffle(array: string | any[]) {
+        function shuffle(array) {
           for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
           }
+          return array;
         }
 
         window.addEventListener('resize', generateSquares);
