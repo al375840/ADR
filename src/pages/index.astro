@@ -1,12 +1,12 @@
 ---
-import '../../public/styles/global.css'; // Adjust the path if necessary
+import '../../public/styles/global.css'; // Ajusta la ruta si es necesario
 ---
 
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>Grid con Estilos Aplicados Correctamente</title>
-    <!-- Import the 'Press Start 2P' font from Google Fonts -->
+    <title>Portfolio Adrián</title>
+    <!-- Importar la fuente 'Press Start 2P' desde Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -20,17 +20,31 @@ import '../../public/styles/global.css'; // Adjust the path if necessary
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('container');
-        let numCols, numRows;
-        let occupiedPositions = [];
-        let textSquares = [];
-        let totalContentHeight = 0;
+        let numCols: number, numRows: number;
+        let occupiedPositions: { row: any; col: any; }[] = [];
+        let textSquares: { row: number; col: number; letter: string; }[] = [];
+
+        const images = [
+          {
+            src: '/images/portrait.png',
+            alt: 'Descripción de la imagen',
+            width: 5,
+            height: 8,
+            col: 2,
+            row: 2,
+          },
+        ];
 
         const texts = [
           {
             content: "ADRIAN",
+            col: 2,
+            row: 2,
           },
           {
             content: "IT ENGINEER",
+            col: 2,
+            row: 4,
           },
         ];
 
@@ -39,15 +53,8 @@ import '../../public/styles/global.css'; // Adjust the path if necessary
             content: 'Este es el texto de la primera tarjeta.',
             width: 10,
             height: 4,
-          },
-        ];
-
-        const images = [
-          {
-            src: '/images/portrait.png', // Ensure the path is correct
-            alt: 'Descripción de la imagen',
-            width: 5,
-            height: 8,
+            col: 2,
+            row: 11,
           },
         ];
 
@@ -56,18 +63,18 @@ import '../../public/styles/global.css'; // Adjust the path if necessary
             throw new Error("El elemento 'container' no se encontró en el DOM.");
           }
 
-          container.innerHTML = ''; // Clear existing squares
+          container.innerHTML = ''; // Limpia los cuadrados existentes
 
-          const minSize = 60; // Minimum size of squares
+          const minSize = 60; // Tamaño mínimo de los cuadrados
 
           const availableWidth = window.innerWidth;
           const availableHeight = window.innerHeight;
 
-          // Calculate the number of columns and rows based on the minimum size
+          // Calcula el número de columnas y filas basándose en el tamaño mínimo
           numCols = Math.floor(availableWidth / minSize);
           numRows = Math.floor(availableHeight / minSize);
 
-          // Set up the grid to have the correct number of columns
+          // Ajusta el grid para que tenga el número correcto de columnas
           container.style.display = 'grid';
           container.style.width = '100vw';
           container.style.height = '100vh';
@@ -77,126 +84,163 @@ import '../../public/styles/global.css'; // Adjust the path if necessary
           occupiedPositions = [];
           textSquares = [];
 
-          calculateTotalContentHeight();
+          createImageElements();
           createTextElements();
           createCardElements();
-          createImageElements();
           generateGridSquares();
         }
 
-        function calculateTotalContentHeight() {
-          totalContentHeight = 0;
+        function isPositionOccupied(row: number, col: number) {
+          return occupiedPositions.some(
+            (pos) => pos.row === row && pos.col === col
+          );
+        }
 
-          // Texts occupy one row each
-          totalContentHeight += texts.length;
-
-          // Add the heights of cards and images
-          cards.forEach((card) => {
-            totalContentHeight += card.height;
-          });
-
-          images.forEach((image) => {
-            totalContentHeight += image.height;
-          });
-
-          // Add spaces between elements
-          const spacesBetweenElements = texts.length + cards.length + images.length - 1;
-          totalContentHeight += spacesBetweenElements;
+        function markPositionAsOccupied(row: number, col: number) {
+          if (row > 0 && row <= numRows && col > 0 && col <= numCols) {
+            occupiedPositions.push({ row, col });
+          }
         }
 
         function createTextElements() {
-          let currentRow = Math.floor((numRows - totalContentHeight) / 2) + 1;
-          currentRow = Math.max(currentRow, 1);
-
           texts.forEach((textItem) => {
-            const { content } = textItem;
+            let { content, col, row } = textItem;
 
-            // Calculate starting column to center the text
-            const textLength = content.replace(/\s/g, '').length;
-            let startCol = Math.floor((numCols - textLength) / 2) + 1;
-            startCol = Math.max(startCol, 1);
+            if (col == null) {
+              const textLength = content.replace(/\s/g, '').length;
+              col = Math.floor((numCols - textLength) / 2) + 1;
+              col = Math.max(col, 1);
+              textItem.col = col;
+            }
 
-            textItem.row = currentRow;
-            textItem.col = startCol;
+            if (row == null) {
+              row = Math.floor(numRows / 2);
+              row = Math.max(row, 1);
+              textItem.row = row;
+            }
 
-            let currentCol = startCol;
+            let currentCol = col;
 
             for (let i = 0; i < content.length; i++) {
               const char = content[i];
               if (char !== ' ') {
-                occupiedPositions.push({ row: currentRow, col: currentCol });
-                textSquares.push({ row: currentRow, col: currentCol, letter: char });
+                if (!isPositionOccupied(row, currentCol)) {
+                  markPositionAsOccupied(row, currentCol);
+                  textSquares.push({ row, col: currentCol, letter: char });
+                } else {
+                  console.warn(
+                    `La posición (${row}, ${currentCol}) ya está ocupada.`
+                  );
+                }
                 currentCol++;
               } else {
                 currentCol++;
               }
             }
-
-            currentRow += 1; // Move to the next row for the next text
           });
         }
 
         function createCardElements() {
-          let currentRow = texts[texts.length - 1].row + 1; // One row after the last text
-
           cards.forEach((cardItem) => {
-            const { width, height } = cardItem;
+            let { content, width, height, col, row } = cardItem;
 
-            // Center the card horizontally
-            let startCol = Math.floor((numCols - width) / 2) + 1;
-            startCol = Math.max(startCol, 1);
-
-            cardItem.row = currentRow;
-            cardItem.col = startCol;
-
-            const endRow = currentRow + height - 1;
-            const endCol = startCol + width - 1;
-
-            // Mark positions as occupied
-            for (let r = currentRow; r <= endRow; r++) {
-              for (let c = startCol; c <= endCol; c++) {
-                occupiedPositions.push({ row: r, col: c });
-              }
+            if (col == null) {
+              col = Math.floor((numCols - width) / 2) + 1;
+              col = Math.max(col, 1);
+              cardItem.col = col;
             }
 
-            createCard(cardItem);
+            if (row == null) {
+              const maxTextRow = texts.reduce(
+                (max, textItem) => Math.max(max, textItem.row),
+                0
+              );
+              row = maxTextRow + 2; // Dejar una fila de espacio
+              row = Math.max(row, 1);
+              cardItem.row = row;
+            }
 
-            currentRow = endRow + 1; // Move to the next row after the card
+            const endRow = row + height - 1;
+            const endCol = col + width - 1;
+
+            // Verificar si las posiciones están ocupadas
+            let canPlace = true;
+            for (let r = row; r <= endRow; r++) {
+              for (let c = col; c <= endCol; c++) {
+                if (isPositionOccupied(r, c)) {
+                  console.warn(
+                    `La posición (${r}, ${c}) ya está ocupada. La tarjeta no puede ser colocada.`
+                  );
+                  canPlace = false;
+                  break;
+                }
+              }
+              if (!canPlace) break;
+            }
+
+            if (canPlace) {
+              // Marcar posiciones como ocupadas
+              for (let r = row; r <= endRow; r++) {
+                for (let c = col; c <= endCol; c++) {
+                  markPositionAsOccupied(r, c);
+                }
+              }
+              createCard(cardItem);
+            }
           });
         }
 
         function createImageElements() {
-          let currentRow = cards.length
-            ? cards[cards.length - 1].row + cards[cards.length - 1].height + 1
-            : texts[texts.length - 1].row + 1;
-
           images.forEach((imageItem) => {
-            const { width, height } = imageItem;
+            let { src, alt, width, height, col, row } = imageItem;
 
-            // Center the image horizontally
-            let startCol = Math.floor((numCols - width) / 2) + 1;
-            startCol = Math.max(startCol, 1);
-
-            imageItem.row = currentRow;
-            imageItem.col = startCol;
-
-            const endRow = currentRow + height - 1;
-            const endCol = startCol + width - 1;
-
-            // Mark positions as occupied
-            for (let r = currentRow; r <= endRow; r++) {
-              for (let c = startCol; c <= endCol; c++) {
-                occupiedPositions.push({ row: r, col: c });
-              }
+            if (col == null) {
+              col = Math.floor((numCols - width) / 2) + 1;
+              col = Math.max(col, 1);
+              imageItem.col = col;
             }
 
-            createImage(imageItem);
+            if (row == null) {
+              const maxCardRow = cards.reduce(
+                (max, cardItem) => Math.max(max, cardItem.row + cardItem.height - 1),
+                0
+              );
+              row = maxCardRow + 2; // Dejar una fila de espacio
+              row = Math.max(row, 1);
+              imageItem.row = row;
+            }
 
-            currentRow = endRow + 1; // Move to the next row after the image
+            const endRow = row + height - 1;
+            const endCol = col + width - 1;
+
+            // Verificar si las posiciones están ocupadas
+            let canPlace = true;
+            for (let r = row; r <= endRow; r++) {
+              for (let c = col; c <= endCol; c++) {
+                if (isPositionOccupied(r, c)) {
+                  console.warn(
+                    `La posición (${r}, ${c}) ya está ocupada. La imagen no puede ser colocada.`
+                  );
+                  canPlace = false;
+                  break;
+                }
+              }
+              if (!canPlace) break;
+            }
+
+            if (canPlace) {
+              // Marcar posiciones como ocupadas
+              for (let r = row; r <= endRow; r++) {
+                for (let c = col; c <= endCol; c++) {
+                  markPositionAsOccupied(r, c);
+                }
+              }
+              createImage(imageItem);
+            }
           });
         }
 
-        function createCard(cardData) {
+        function createCard(cardData: { content: any; width: any; height: any; col: any; row: any; }) {
           const { content, row, col, width, height } = cardData;
 
           const card = document.createElement('div');
@@ -210,7 +254,7 @@ import '../../public/styles/global.css'; // Adjust the path if necessary
           container.appendChild(card);
         }
 
-        function createImage(imageData) {
+        function createImage(imageData: { src: any; alt: any; width: any; height: any; col: any; row: any; }) {
           const { src, alt, row, col, width, height } = imageData;
 
           const imgWrapper = document.createElement('div');
@@ -234,9 +278,7 @@ import '../../public/styles/global.css'; // Adjust the path if necessary
           const totalPositions = [];
           for (let row = 1; row <= numRows; row++) {
             for (let col = 1; col <= numCols; col++) {
-              const isOccupied = occupiedPositions.some(
-                (item) => item.row === row && item.col === col
-              );
+              const isOccupied = isPositionOccupied(row, col);
               if (!isOccupied) {
                 totalPositions.push({ row, col });
               }
@@ -277,7 +319,7 @@ import '../../public/styles/global.css'; // Adjust the path if necessary
           }
         }
 
-        function shuffle(array) {
+        function shuffle(array: string | any[]) {
           for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
